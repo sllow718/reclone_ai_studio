@@ -1,0 +1,29 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'  # every 3 days at midnight UTC
+  workflow_dispatch:        # lets you trigger it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert keep-alive row into game_sessions
+        run: |
+          curl -sf -X POST "https://gvgaxmtgginionkhimct.supabase.co/rest/v1/game_sessions" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+                  "user_id": null,
+                  "display_name": "keepalive-bot",
+                  "is_guest": true,
+                  "slot_count": 4,
+                  "attempts_used": 0,
+                  "max_attempts": 10,
+                  "won": false,
+                  "gave_up": true,
+                  "correct_positions": 0
+                }'
