@@ -2,13 +2,19 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'  # every 3 days at midnight UTC
-  workflow_dispatch:        # lets you trigger it manually from the Actions tab
+    - cron: '0 0 * * *'  # every day at midnight UTC
+  workflow_dispatch:      # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write         # needed so the job can commit the timestamp file
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
       - name: Insert keep-alive row into game_sessions
         run: |
           curl -sf -X POST "https://gvgaxmtgginionkhimct.supabase.co/rest/v1/game_sessions" \
@@ -27,3 +33,13 @@ jobs:
                   "gave_up": true,
                   "correct_positions": 0
                 }'
+
+      - name: Record last-run timestamp (keeps repo active so GitHub doesn't auto-disable this schedule)
+        run: |
+          mkdir -p .keepalive
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .keepalive/last-run.txt
+          git config user.name "keepalive-bot"
+          git config user.email "actions@github.com"
+          git add .keepalive/last-run.txt
+          git commit -m "chore: keep-alive run $(date -u +%Y-%m-%d)" || echo "Nothing to commit"
+          git push
